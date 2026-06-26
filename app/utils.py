@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import torch
 import traceback
+from .config import settings
+
 
 
 is_gpu = torch.cuda.is_available()
@@ -108,8 +110,8 @@ def evaluate_frame(frame) -> tuple[int, float]:
 
 def select_nbd_frame(point_frame: int, vid_object: cv2.VideoCapture, tot_frames: int) -> np.array:
     
-  start_frame = max(1, point_frame - 7)
-  end_frame = min(tot_frames, point_frame + 7)
+  start_frame = max(1, point_frame - settings.num_eval_nbd_frames)
+  end_frame = min(tot_frames, point_frame + settings.num_eval_nbd_frames)
   frames = []
   
   for i in range(start_frame, end_frame + 1, 2):
@@ -128,11 +130,6 @@ def select_nbd_frame(point_frame: int, vid_object: cv2.VideoCapture, tot_frames:
 
 def eval_face(face, frame) -> bool:
   
-  sharpness_threshold = 5000
-  face_size_threshold = 10000
-  pose_symmetry_threshold = 0.5
-  clahe = get_clahe()
-  
   frame_score = 0.0
   is_face = False
   
@@ -140,7 +137,7 @@ def eval_face(face, frame) -> bool:
   bbox = face.bbox.astype(int)
   x1, y1, x2, y2 = max(0, bbox[0]), max(0, bbox[1]), bbox[2], bbox[3]
   face_crop = frame[y1:y2, x1:x2]
-  if confidence<0.6 or face_crop.size <= face_size_threshold:
+  if confidence<0.6 or face_crop.size <= settings.face_size_threshold:
     is_face = False
     return is_face
   '''
@@ -162,7 +159,7 @@ def eval_face(face, frame) -> bool:
   dist_right = np.linalg.norm(nose - right_eye)
   pose_symmetry = min(dist_left, dist_right) / max(dist_left, dist_right, 1e-5)
   
-  if sharpness < sharpness_threshold or pose_symmetry < pose_symmetry_threshold:
+  if sharpness < settings.sharpness_threshold or pose_symmetry < settings.pose_symmetry_threshold:
     frame_score += 0.0
     is_face = False
   else:
